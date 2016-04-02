@@ -77,7 +77,14 @@ canvas.addEventListener("mousedown", function(e) {
   var hypotenuse = Math.sqrt(Math.pow((xClick - bulletCenterX), 2) +Math.pow((yClick - bulletCenterY), 2));
   var bulletXDirection = (xClick - bulletCenterX) / hypotenuse;
   var bulletYDirection = (yClick - bulletCenterY) / hypotenuse;
-  bullets.push({'x' : bulletCenterX, 'y' : bulletCenterY, 'dirX' : bulletXDirection, 'dirY' : bulletYDirection});
+  bullets.push({
+    'x' : bulletCenterX,
+    'y' : bulletCenterY,
+    'originalX' : bulletCenterX,
+    'originalY' : bulletCenterY,
+    'dirX' : bulletXDirection,
+    'dirY' : bulletYDirection
+  });
 }, false);
 
 function getClickX(e){
@@ -154,8 +161,8 @@ function checkCollisionCondition(enemyOR, bulletData){
   var condition2 = enemyOR.x2 >= bulletData.x;
   var condition3 = enemyOR.y1 <= bulletData.y;
   var condition4 = enemyOR.y2 >= bulletData.y;
-  var condition5 = (centerX-bulletData.x)/bulletData.dirX > 0;
-  var condition6 = (centerY-bulletData.y)/bulletData.dirY > 0;
+  var condition5 = (centerX-bulletData.originalX)/bulletData.dirX > 0;
+  var condition6 = (centerY-bulletData.originalY)/bulletData.dirY > 0;
   return condition1 && condition2 && condition3 && condition4 && condition5 && condition6;
 }
 
