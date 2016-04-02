@@ -46,10 +46,31 @@ var MovableGameAsset = function(src, speed, width, height){
 };
 
 var socket = io();
+//socket.join('game room');
+
+socket.on("joingame", function(data){
+  //TODO: implement the logic for other people joining
+  console.log("someone joined the room");
+});
 
 socket.on("fire", function(data){
   //TODO: implement the logic for other people firing
   console.log("fire one");
+});
+
+socket.on("move", function(data){
+  //TODO: implement the logic for other people moving
+  console.log("someone's moving");
+});
+
+socket.on("spawn", function(data){
+  //TODO: implement the logic for other people spawning
+  console.log("someone has spawned");
+});
+
+socket.on("die", function(data){
+  //TODO: implement the logic for other people dying
+  console.log("someone died");
 });
 
 var bullets = [];
@@ -129,6 +150,7 @@ function update(timeDelta) { //timeDelta should be in seconds
   if(keysDown[downKey]){
     hero.y = Math.min((height-hero.height), hero.y + hero.speed*timeDelta);
   }
+  socket.emit("move", hero);
   bullets.forEach(function(bulletData, bulletIndex, bulletArray){
     if(checkBulletCollision(bulletData) || checkBulletOutOfBounds(bulletData)){
       bulletArray.splice(bulletIndex, 1);
