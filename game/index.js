@@ -45,15 +45,22 @@ var MovableGameAsset = function(src, speed, width, height){
   this.y = (canvas.height/2) - this.height/2;
 };
 
+var socket = io();
+
+socket.on("fire", function(data){
+  //TODO: implement the logic for other people firing
+  console.log("fire one");
+});
+
 var bullets = [];
 var enemies = [];
 //END OF GAME ASSETS DECLARATIONS
-var bullet = new GameAsset("assets/bullet.jpg");
-var background = new GameAsset("assets/bgImage.jpg");
+var bullet = new GameAsset("../assets/bullet.jpg");
+var background = new GameAsset("../assets/bgImage.jpg");
 
-var hero = new MovableGameAsset("assets/hero.png", herospeed, herowidth, heroheight);
+var hero = new MovableGameAsset("../assets/hero.png", herospeed, herowidth, heroheight);
 
-var testenemy = new MovableGameAsset("assets/enemy.jpg", herospeed, 40, 42);
+var testenemy = new MovableGameAsset("../assets/enemy.jpg", herospeed, 40, 42);
 testenemy.width = herowidth;
 testenemy.height = heroheight;
 enemies.push(testenemy);
@@ -77,14 +84,14 @@ canvas.addEventListener("mousedown", function(e) {
   var hypotenuse = Math.sqrt(Math.pow((xClick - bulletCenterX), 2) +Math.pow((yClick - bulletCenterY), 2));
   var bulletXDirection = (xClick - bulletCenterX) / hypotenuse;
   var bulletYDirection = (yClick - bulletCenterY) / hypotenuse;
-  bullets.push({
+  var bullet = {
     'x' : bulletCenterX,
     'y' : bulletCenterY,
-    'originalX' : bulletCenterX,
-    'originalY' : bulletCenterY,
     'dirX' : bulletXDirection,
     'dirY' : bulletYDirection
-  });
+  };
+  bullets.push(bullet);
+  socket.emit('fire', bullet);
 }, false);
 
 function getClickX(e){
@@ -143,8 +150,8 @@ function checkBulletCollision(bulletData){
     var enemyOR = {
       "x1" : enemy.x - bulletwidth,
       "y1" : enemy.y - bulletheight,
-      "x2" : enemy.x + enemy.width + 2*bulletwidth,
-      "y2" : enemy.y + enemy.height + 2*bulletheight
+      "x2" : enemy.x + enemy.width + 2*bulletwidth -2,
+      "y2" : enemy.y + enemy.height + 2*bulletheight -2
     };
     if(checkCollisionCondition(enemyOR, bulletData)) {
       console.log("COLLISION HAPPENED");
@@ -161,9 +168,7 @@ function checkCollisionCondition(enemyOR, bulletData){
   var condition2 = enemyOR.x2 >= bulletData.x;
   var condition3 = enemyOR.y1 <= bulletData.y;
   var condition4 = enemyOR.y2 >= bulletData.y;
-  var condition5 = (centerX-bulletData.originalX)/bulletData.dirX > 0;
-  var condition6 = (centerY-bulletData.originalY)/bulletData.dirY > 0;
-  return condition1 && condition2 && condition3 && condition4 && condition5 && condition6;
+  return condition1 && condition2 && condition3 && condition4;
 }
 
 var init = function() {
