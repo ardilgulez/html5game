@@ -138,19 +138,26 @@ function getClickY(e){
 }
 
 function update(timeDelta) { //timeDelta should be in seconds
+  var moving = false;
   if(keysDown[leftKey]){
     hero.x = Math.max(0, (hero.x - hero.speed*timeDelta));
+    moving = true;
   }
   if(keysDown[upKey]){
     hero.y = Math.max(0, (hero.y - hero.speed*timeDelta));
+    moving = true;
   }
   if(keysDown[rightKey]){
     hero.x = Math.min((width-hero.width), hero.x + hero.speed*timeDelta);
+    moving = true;
   }
   if(keysDown[downKey]){
     hero.y = Math.min((height-hero.height), hero.y + hero.speed*timeDelta);
+    moving = true;
   }
-  socket.emit("move", hero);
+  if(moving){
+    socket.emit("move", hero);
+  }
   bullets.forEach(function(bulletData, bulletIndex, bulletArray){
     if(checkBulletCollision(bulletData) || checkBulletOutOfBounds(bulletData)){
       bulletArray.splice(bulletIndex, 1);
