@@ -1,7 +1,6 @@
 //CANVAS DECLARATIONS HERE
-var canvas = document.createElement("canvas");
+var canvas = document.getElementById("gamecanvas");
 var context = canvas.getContext("2d");
-document.body.appendChild(canvas);
 //END OF CANVAS DECLARATIONS
 
 //MAGIC NUMBERS HERE
@@ -19,6 +18,8 @@ var herospeed = 256;
 var bulletheight = 4;
 var bulletwidth = 4;
 var bulletspeed = 500;
+var needlist = true;
+var joined = false;
 //END OF MAGIC NUMBERS
 
 //GAME ASSETS DECLARATIONS
@@ -38,53 +39,77 @@ var MovableGameAsset = function(src, speed, width, height){
   this.speed = speed;
   this.width = width;
   this.height = height;
+  this.username = undefined;
   this.image.onload = function(){
     this.ready = true;
   };
-  this.x = (canvas.width/2) - this.width/2;
-  this.y = (canvas.height/2) - this.height/2;
+  this.x = (canvas.width * Math.random()) - this.width/2;
+  this.y = (canvas.height * Math.random()) - this.height/2;
 };
 
+var enemyImageReady = false;
+var enemyImage = new Image();
+enemyImage.src = "../assets/enemy.jpg";
+enemyImage.onload = function(){
+  enemyImageReady = true;
+};
+
+var bullets = [];
+var enemies = {};
+//END OF GAME ASSETS DECLARATIONS
+
 var socket = io();
-//socket.join('game room');
+
+socket.on("welcome", function(data){
+  //TODO: implement the logic for other people joining
+  console.log(data);
+});
+
+socket.on("joinfail", function(data){
+  alert(data);
+});
 
 socket.on("joingame", function(data){
   //TODO: implement the logic for other people joining
-  console.log("someone joined the room");
+  socket.emit("spawn", hero);
+  joined = true;
+});
+
+socket.on("get list", function(data){
+  if(needlist){
+    enemies = data;
+    needlist = false;
+  }
 });
 
 socket.on("fire", function(data){
   //TODO: implement the logic for other people firing
-  console.log("fire one");
+  data.x += data.dirX * 500 * ((new Date().getTime()) - data.time) / 1000;
+  data.y += data.dirY * 500 * ((new Date().getTime()) - data.time) / 1000;
+  bullets.push(data);
 });
 
 socket.on("move", function(data){
+  enemies[data.username].x = data.x;
+  enemies[data.username].y = data.y;
   //TODO: implement the logic for other people moving
-  console.log("someone's moving");
 });
 
 socket.on("spawn", function(data){
+  enemies[data.username] = data;
   //TODO: implement the logic for other people spawning
-  console.log("someone has spawned");
 });
 
 socket.on("die", function(data){
   //TODO: implement the logic for other people dying
-  console.log("someone died");
 });
 
-var bullets = [];
-var enemies = [];
 //END OF GAME ASSETS DECLARATIONS
 var bullet = new GameAsset("../assets/bullet.jpg");
 var background = new GameAsset("../assets/bgImage.jpg");
+var joinscreen = new GameAsset("../assets/join.jpg");
 
 var hero = new MovableGameAsset("../assets/hero.png", herospeed, herowidth, heroheight);
-
-var testenemy = new MovableGameAsset("../assets/enemy.jpg", herospeed, 40, 42);
-testenemy.width = herowidth;
-testenemy.height = heroheight;
-enemies.push(testenemy);
 
 var keysDown = {};
 
@@ -97,22 +122,26 @@ canvas.addEventListener("keyup", function(e) {
 	delete keysDown[e.keyCode];
 }, false);
 
-canvas.addEventListener("mousedown", function(e) {
-  var xClick = getClickX(e);
-  var yClick = getClickY(e);
-  var bulletCenterX = hero.x + hero.width/2 - bulletwidth/2;
-  var bulletCenterY = hero.y + hero.height/2 - bulletheight/2;
-  var hypotenuse = Math.sqrt(Math.pow((xClick - bulletCenterX), 2) +Math.pow((yClick - bulletCenterY), 2));
-  var bulletXDirection = (xClick - bulletCenterX) / hypotenuse;
-  var bulletYDirection = (yClick - bulletCenterY) / hypotenuse;
-  var bullet = {
-    'x' : bulletCenterX,
-    'y' : bulletCenterY,
-    'dirX' : bulletXDirection,
-    'dirY' : bulletYDirection
-  };
-  bullets.push(bullet);
-  socket.emit('fire', bullet);
+canvas.addEventListener("click", function(e) {
+  if(joined){
+    var xClick = getClickX(e);
+    var yClick = getClickY(e);
+    var bulletCenterX = hero.x + hero.width/2 - bulletwidth/2;
+    var bulletCenterY = hero.y + hero.height/2 - bulletheight/2;
+    var hypotenuse = Math.sqrt(Math.pow((xClick - bulletCenterX), 2) +Math.pow((yClick - bulletCenterY), 2));
+    var bulletXDirection = (xClick - bulletCenterX) / hypotenuse;
+    var bulletYDirection = (yClick - bulletCenterY) / hypotenuse;
+    var bullet = {
+      'x' : bulletCenterX,
+      'y' : bulletCenterY,
+      'dirX' : bulletXDirection,
+      'dirY' : bulletYDirection,
+      'time' : new Date().getTime(),
+      'username' : hero.username
+    };
+    bullets.push(bullet);
+    socket.emit("fire", bullet);
+  }
 }, false);
 
 function getClickX(e){
@@ -173,20 +202,18 @@ function checkBulletOutOfBounds(bulletData){
 }
 
 function checkBulletCollision(bulletData){
-  console.log("CHECKING BULLET COLLISION");
   var collisionHappened = false;
-  enemies.forEach(function(enemy){
+  for(var name in enemies){
     var enemyOR = {
-      "x1" : enemy.x - bulletwidth,
-      "y1" : enemy.y - bulletheight,
-      "x2" : enemy.x + enemy.width + 2*bulletwidth -2,
-      "y2" : enemy.y + enemy.height + 2*bulletheight -2
+      "x1" : enemies[name].x - bulletwidth,
+      "y1" : enemies[name].y - bulletheight,
+      "x2" : enemies[name].x + enemies[name].width + 2*bulletwidth -2,
+      "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
     };
     if(checkCollisionCondition(enemyOR, bulletData)) {
-      console.log("COLLISION HAPPENED");
       collisionHappened = true;
     }
-  });
+  }
   return collisionHappened;
 }
 
@@ -200,13 +227,21 @@ function checkCollisionCondition(enemyOR, bulletData){
   return condition1 && condition2 && condition3 && condition4;
 }
 
-var init = function() {
-  if(background.ready){
-    context.drawImage(background.image, 0, 0);
-    context.save();
-  }
-  if(hero.ready){
-    context.drawImage(hero.image, hero.x, hero.y);
+var joinAction = function(){
+  document.getElementById("usernamebox").style.visibility = false;
+  hero.username = document.getElementById("usernamebox").value;
+  socket.emit("joingame", {"username" : hero.username});
+};
+
+var gameInit = function() {
+  if(joined){
+    if(background.ready){
+      context.drawImage(background.image, 0, 0);
+      context.save();
+    }
+    if(hero.ready){
+      context.drawImage(hero.image, hero.x, hero.y);
+    }
   }
 };
 
@@ -218,27 +253,36 @@ requestAnimationFrame =
               w.msRequestAnimationFrame ||
               w.mozRequestAnimationFrame;
 
-var render = function() {
+var renderGame = function() {
   context.restore();
   context.clearRect(0, 0, width, height);
   context.drawImage(background.image, 0, 0);
   bullets.forEach(function(bulletData) {
     context.drawImage(bullet.image, bulletData.x, bulletData.y);
   });
-  enemies.forEach(function(enemy){
-    context.drawImage(enemy.image, enemy.x, enemy.y);
-  });
+  for(var name in enemies){
+    context.drawImage(enemyImage, enemies[name].x, enemies[name].y);
+  }
   context.drawImage(hero.image, hero.x, hero.y);
 };
 
+var renderJoin = function() {
+  context.clearRect(0, 0, width, height);
+  context.drawImage(joinscreen.image, 0, 0);
+};
+
 var gameLoop = function() {
-  var now = new Date().getTime();
-  var delta = now - then;
-  update(delta/1000);
-  render();
-  then = now;
+  if(joined){
+    var now = new Date().getTime();
+    var delta = now - then;
+    update(delta/1000);
+    renderGame();
+    then = now;
+  } else {
+    renderJoin();
+  }
   requestAnimationFrame(gameLoop);
 };
 
-init();
+gameInit();
 gameLoop();
