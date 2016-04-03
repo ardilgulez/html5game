@@ -40,7 +40,8 @@ io.on('connection', function(socket){
   });
 
   socket.on('die', function(data){
-    socket.broadcast.to('game room').emit('die', data);
+    livingplayers[data.username] = undefined;
+    socket.broadcast.emit('die', data);
   });
 
   socket.on('disconnect', function(data){

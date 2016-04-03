@@ -40,6 +40,7 @@ var MovableGameAsset = function(src, speed, width, height){
   this.width = width;
   this.height = height;
   this.username = undefined;
+  this.lasthitter = undefined;
   this.image.onload = function(){
     this.ready = true;
   };
@@ -68,6 +69,7 @@ socket.on("joinfail", function(data){
 
 socket.on("joingame", function(data){
   document.getElementById("joinbutton").style.display = "none";
+  document.getElementById("leavebutton").style.display = "inline";
   socket.emit("spawn", hero);
   joined = true;
 });
@@ -102,7 +104,10 @@ socket.on("spawn", function(data){
 });
 
 socket.on("die", function(data){
-  //TODO: implement the logic for other people dying
+  delete enemies[data.username];
+  if(data.lasthitter){
+    console.log(data.username, 'has been killed by', data.lasthitter);
+  }
 });
 
 //END OF GAME ASSETS DECLARATIONS
@@ -215,6 +220,7 @@ function checkBulletCollision(bulletData){
         "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
       };
       if(checkCollisionCondition(enemyOR, bulletData)) {
+        enemies[name].lasthitter = bulletData.username;
         collisionHappened = true;
       }
     }
@@ -235,6 +241,14 @@ function checkCollisionCondition(enemyOR, bulletData){
 var joinAction = function(){
   hero.username = document.getElementById("usernamebox").value;
   socket.emit("joingame", {"username" : hero.username});
+};
+
+var leaveAction = function() {
+  joined = false;
+  document.getElementById("joinbutton").style.display = "inline";
+  document.getElementById("leavebutton").style.display = "none";
+  socket.emit("die", hero);
+  delete hero.lasthitter;
 };
 
 var gameInit = function() {
