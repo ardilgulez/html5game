@@ -12,7 +12,7 @@ var rightKey = 68;
 var width = canvas.width = 512;
 var height = canvas.height = 480;
 var heroheight = 34;
-var herowidth = 32;
+var herowidth = 28;
 var herospeed = 256;
 
 var bulletheight = 4;
@@ -41,6 +41,7 @@ var MovableGameAsset = function(src, speed, width, height){
   this.height = height;
   this.username = undefined;
   this.lasthitter = undefined;
+  this.health = undefined;
   this.image.onload = function(){
     this.ready = true;
   };
@@ -50,7 +51,7 @@ var MovableGameAsset = function(src, speed, width, height){
 
 var enemyImageReady = false;
 var enemyImage = new Image();
-enemyImage.src = "../assets/enemy.jpg";
+enemyImage.src = "../assets/enemy.png";
 enemyImage.onload = function(){
   enemyImageReady = true;
 };
@@ -105,6 +106,7 @@ socket.on("spawn", function(data){
 
 socket.on("die", function(data){
   delete enemies[data.username];
+  console.log(data.username, data.lasthitter);
   if(data.lasthitter){
     console.log(data.username, 'has been killed by', data.lasthitter);
   }
@@ -116,6 +118,7 @@ var background = new GameAsset("../assets/bgImage.jpg");
 var joinscreen = new GameAsset("../assets/join.jpg");
 
 var hero = new MovableGameAsset("../assets/hero.png", herospeed, herowidth, heroheight);
+hero.health = 100;
 
 var keysDown = {};
 var bullets = [];
@@ -220,13 +223,29 @@ function checkBulletCollision(bulletData){
         "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
       };
       if(checkCollisionCondition(enemyOR, bulletData)) {
-        enemies[name].lasthitter = bulletData.username;
+        //enemies[name].lasthitter = bulletData.username;
+        if(hero.username === name){
+          hero.lasthitter = bulletData.username;
+          console.log(hero.lasthitter);
+          hero.health -= 10;
+          if(hero.health <= 0){
+            handleDeath();
+          }
+        }
         collisionHappened = true;
       }
     }
   }
   return collisionHappened;
 }
+
+var handleDeath = function(){
+  joined = false;
+  document.getElementById("joinbutton").style.display = "inline";
+  document.getElementById("leavebutton").style.display = "none";
+  socket.emit("die", hero);
+  delete hero.lasthitter;
+};
 
 function checkCollisionCondition(enemyOR, bulletData){
   var centerX = ((enemyOR.x2+enemyOR.x1)/2);
@@ -240,6 +259,7 @@ function checkCollisionCondition(enemyOR, bulletData){
 
 var joinAction = function(){
   hero.username = document.getElementById("usernamebox").value;
+  hero.health = 100;
   socket.emit("joingame", {"username" : hero.username});
 };
 

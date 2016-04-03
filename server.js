@@ -40,7 +40,7 @@ io.on('connection', function(socket){
   });
 
   socket.on('die', function(data){
-    livingplayers[data.username] = undefined;
+    delete livingplayers[data.username];
     socket.broadcast.emit('die', data);
   });
 
