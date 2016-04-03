@@ -21,8 +21,7 @@ io.on('connection', function(socket){
     if(livingplayers[data.username]){
       socket.emit('joinfail', 'That name is taken');
     } else {
-      //TODO: go back to: socket.broadcast.to('game room').emit('move', data);
-      io.sockets.emit('joingame', data);
+      socket.emit('joingame', data);
     }
   });
 

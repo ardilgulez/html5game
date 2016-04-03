@@ -67,7 +67,7 @@ socket.on("joinfail", function(data){
 });
 
 socket.on("joingame", function(data){
-  //TODO: implement the logic for other people joining
+  document.getElementById("joinbutton").style.display = "none";
   socket.emit("spawn", hero);
   joined = true;
 });
@@ -233,7 +233,6 @@ function checkCollisionCondition(enemyOR, bulletData){
 }
 
 var joinAction = function(){
-  document.getElementById("usernamebox").style.visibility = false;
   hero.username = document.getElementById("usernamebox").value;
   socket.emit("joingame", {"username" : hero.username});
 };
