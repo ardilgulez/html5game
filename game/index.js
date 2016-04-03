@@ -113,7 +113,6 @@ socket.on("die", function(data){
     hero.kills += 1;
   }
   if(data.lasthitter){
-    console.log(data.username, 'has been killed by', data.lasthitter);
     killList.reverse();
     killList.push({"kill" : data.lasthitter, "die" : data.username, "time" : new Date().getTime()});
     killList.reverse();
