@@ -42,6 +42,8 @@ var MovableGameAsset = function(src, speed, width, height){
   this.username = undefined;
   this.lasthitter = undefined;
   this.health = undefined;
+  this.kills = 0;
+  this.deaths = 0;
   this.image.onload = function(){
     this.ready = true;
   };
@@ -107,6 +109,9 @@ socket.on("spawn", function(data){
 socket.on("die", function(data){
   delete enemies[data.username];
   console.log(data.username, data.lasthitter);
+  if(data.lasthitter === hero.username){
+    hero.kills += 1;
+  }
   if(data.lasthitter){
     console.log(data.username, 'has been killed by', data.lasthitter);
   }
@@ -243,6 +248,8 @@ var handleDeath = function(){
   joined = false;
   document.getElementById("joinbutton").style.display = "inline";
   document.getElementById("leavebutton").style.display = "none";
+  hero.deaths += 1;
+  console.log(hero.deaths);
   socket.emit("die", hero);
   delete hero.lasthitter;
 };
@@ -267,6 +274,7 @@ var leaveAction = function() {
   joined = false;
   document.getElementById("joinbutton").style.display = "inline";
   document.getElementById("leavebutton").style.display = "none";
+  hero.deaths += 1;
   socket.emit("die", hero);
   delete hero.lasthitter;
 };
@@ -305,6 +313,10 @@ var renderGame = function() {
     }
   }
   context.drawImage(hero.image, hero.x, hero.y);
+  context.font = "12px serif";
+  context.textAlign = "right";
+  context.fillText("Kills: " + hero.kills, canvas.width, 15);
+  context.fillText("Deaths: " + hero.deaths, canvas.width, 30);
 };
 
 var renderJoin = function() {
