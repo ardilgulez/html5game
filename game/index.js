@@ -53,9 +53,6 @@ enemyImage.src = "../assets/enemy.jpg";
 enemyImage.onload = function(){
   enemyImageReady = true;
 };
-
-var bullets = [];
-var enemies = {};
 //END OF GAME ASSETS DECLARATIONS
 
 var socket = io();
@@ -80,13 +77,17 @@ socket.on("get list", function(data){
     enemies = data;
     needlist = false;
   }
+  enemies[hero.username] = hero;
 });
 
 socket.on("fire", function(data){
   //TODO: implement the logic for other people firing
   data.x += data.dirX * 500 * ((new Date().getTime()) - data.time) / 1000;
   data.y += data.dirY * 500 * ((new Date().getTime()) - data.time) / 1000;
+  console.log(bullets.length);
   bullets.push(data);
+  console.log("FIRE ONE", data);
+  console.log(bullets.length);
 });
 
 socket.on("move", function(data){
@@ -112,6 +113,8 @@ var joinscreen = new GameAsset("../assets/join.jpg");
 var hero = new MovableGameAsset("../assets/hero.png", herospeed, herowidth, heroheight);
 
 var keysDown = {};
+var bullets = [];
+var enemies = {};
 
 canvas.tabIndex = 1;
 canvas.addEventListener("keydown", function(e) {
@@ -204,14 +207,16 @@ function checkBulletOutOfBounds(bulletData){
 function checkBulletCollision(bulletData){
   var collisionHappened = false;
   for(var name in enemies){
-    var enemyOR = {
-      "x1" : enemies[name].x - bulletwidth,
-      "y1" : enemies[name].y - bulletheight,
-      "x2" : enemies[name].x + enemies[name].width + 2*bulletwidth -2,
-      "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
-    };
-    if(checkCollisionCondition(enemyOR, bulletData)) {
-      collisionHappened = true;
+    if(bulletData.username !== name){
+      var enemyOR = {
+        "x1" : enemies[name].x - bulletwidth,
+        "y1" : enemies[name].y - bulletheight,
+        "x2" : enemies[name].x + enemies[name].width + 2*bulletwidth -2,
+        "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
+      };
+      if(checkCollisionCondition(enemyOR, bulletData)) {
+        collisionHappened = true;
+      }
     }
   }
   return collisionHappened;
@@ -257,11 +262,14 @@ var renderGame = function() {
   context.restore();
   context.clearRect(0, 0, width, height);
   context.drawImage(background.image, 0, 0);
+  console.log(bullets.length);
   bullets.forEach(function(bulletData) {
     context.drawImage(bullet.image, bulletData.x, bulletData.y);
   });
   for(var name in enemies){
-    context.drawImage(enemyImage, enemies[name].x, enemies[name].y);
+    if(hero.username !== name){
+      context.drawImage(enemyImage, enemies[name].x, enemies[name].y);
+    }
   }
   context.drawImage(hero.image, hero.x, hero.y);
 };
