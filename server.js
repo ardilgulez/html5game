@@ -40,7 +40,9 @@ io.on('connection', function(socket){
   });
 
   socket.on('die', function(data){
-    livingplayers[data.lasthitter].kills += 1;
+    if(data.lasthitter) {
+      livingplayers[data.lasthitter].kills += 1;
+    }
     livingplayers[data.username].deaths += 1;
     for(var name in livingplayers){
       console.log(name, livingplayers[name].kills, livingplayers[name].deaths);

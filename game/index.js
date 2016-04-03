@@ -1,6 +1,7 @@
 //CANVAS DECLARATIONS HERE
 var canvas = document.getElementById("gamecanvas");
 var context = canvas.getContext("2d");
+context.font = "12px serif";
 //END OF CANVAS DECLARATIONS
 
 //MAGIC NUMBERS HERE
@@ -108,12 +109,14 @@ socket.on("spawn", function(data){
 
 socket.on("die", function(data){
   delete enemies[data.username];
-  console.log(data.username, data.lasthitter);
   if(data.lasthitter === hero.username){
     hero.kills += 1;
   }
   if(data.lasthitter){
     console.log(data.username, 'has been killed by', data.lasthitter);
+    killList.reverse();
+    killList.push({"kill" : data.lasthitter, "die" : data.username, "time" : new Date().getTime()});
+    killList.reverse();
   }
 });
 
@@ -128,6 +131,7 @@ hero.health = 100;
 var keysDown = {};
 var bullets = [];
 var enemies = {};
+var killList = [];
 
 canvas.tabIndex = 1;
 canvas.addEventListener("keydown", function(e) {
@@ -228,11 +232,12 @@ function checkBulletCollision(bulletData){
         "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
       };
       if(checkCollisionCondition(enemyOR, bulletData)) {
-        //enemies[name].lasthitter = bulletData.username;
+        console.log(hero.username, name);
         if(hero.username === name){
           hero.lasthitter = bulletData.username;
-          console.log(hero.lasthitter);
+          console.log("HITTER", hero.lasthitter);
           hero.health -= 10;
+          console.log("HEALTH :", hero.health);
           if(hero.health <= 0){
             handleDeath();
           }
@@ -313,7 +318,6 @@ var renderGame = function() {
     }
   }
   context.drawImage(hero.image, hero.x, hero.y);
-  context.font = "12px serif";
   context.textAlign = "right";
   context.fillText("Kills: " + hero.kills, canvas.width, 15);
   context.fillText("Deaths: " + hero.deaths, canvas.width, 30);
@@ -324,12 +328,24 @@ var renderJoin = function() {
   context.drawImage(joinscreen.image, 0, 0);
 };
 
+var renderKills = function() {
+  context.textAlign = "left";
+  killList.forEach(function(kill, killIndex, killArray){
+    if(new Date().getTime() - kill.time >= 30000){
+      killArray.splice(killIndex, 1);
+    } else {
+      context.fillText(kill.kill + " -> " + kill.die, 0, 15*(killIndex + 1));
+    }
+  });
+};
+
 var gameLoop = function() {
   if(joined){
     var now = new Date().getTime();
     var delta = now - then;
     update(delta/1000);
     renderGame();
+    renderKills();
     then = now;
   } else {
     renderJoin();
