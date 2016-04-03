@@ -331,7 +331,7 @@ var renderJoin = function() {
 var renderKills = function() {
   context.textAlign = "left";
   killList.forEach(function(kill, killIndex, killArray){
-    if(new Date().getTime() - kill.time >= 30000){
+    if(new Date().getTime() - kill.time >= 3000){
       killArray.splice(killIndex, 1);
     } else {
       context.fillText(kill.kill + " -> " + kill.die, 0, 15*(killIndex + 1));
