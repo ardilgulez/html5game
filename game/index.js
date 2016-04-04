@@ -87,36 +87,34 @@ socket.on("get list", function(data){
 });
 
 socket.on("fire", function(data){
-  //TODO: implement the logic for other people firing
   data.x += data.dirX * 500 * ((new Date().getTime()) - data.time) / 1000;
   data.y += data.dirY * 500 * ((new Date().getTime()) - data.time) / 1000;
-  console.log(bullets.length);
   bullets.push(data);
-  console.log("FIRE ONE", data);
-  console.log(bullets.length);
 });
 
 socket.on("move", function(data){
   enemies[data.username].x = data.x;
   enemies[data.username].y = data.y;
-  //TODO: implement the logic for other people moving
 });
 
 socket.on("spawn", function(data){
   enemies[data.username] = data;
-  //TODO: implement the logic for other people spawning
 });
 
 socket.on("die", function(data){
-  delete enemies[data.username];
-  if(data.lasthitter === hero.username){
-    hero.kills += 1;
-  }
+  console.log("SOMEONE DIED:", JSON.stringify(data, null, 2));
   if(data.lasthitter){
+    console.log(data.lasthitter);
+    if(data.lasthitter === hero.username){
+      hero.kills += 1;
+    }
     killList.reverse();
     killList.push({"kill" : data.lasthitter, "die" : data.username, "time" : new Date().getTime()});
     killList.reverse();
   }
+  setTimeout(function(){
+    delete enemies[data.username];
+  }, 50);
 });
 
 //END OF GAME ASSETS DECLARATIONS
@@ -234,12 +232,7 @@ function checkBulletCollision(bulletData){
         console.log(hero.username, name);
         if(hero.username === name){
           hero.lasthitter = bulletData.username;
-          console.log("HITTER", hero.lasthitter);
           hero.health -= 10;
-          console.log("HEALTH :", hero.health);
-          if(hero.health <= 0){
-            handleDeath();
-          }
         }
         collisionHappened = true;
       }
@@ -253,7 +246,6 @@ var handleDeath = function(){
   document.getElementById("joinbutton").style.display = "inline";
   document.getElementById("leavebutton").style.display = "none";
   hero.deaths += 1;
-  console.log(hero.deaths);
   socket.emit("die", hero);
   delete hero.lasthitter;
 };
@@ -307,7 +299,6 @@ var renderGame = function() {
   context.restore();
   context.clearRect(0, 0, width, height);
   context.drawImage(background.image, 0, 0);
-  console.log(bullets.length);
   bullets.forEach(function(bulletData) {
     context.drawImage(bullet.image, bulletData.x, bulletData.y);
   });
@@ -345,6 +336,9 @@ var gameLoop = function() {
     update(delta/1000);
     renderGame();
     renderKills();
+    if(hero.health <= 0){
+      handleDeath();
+    }
     then = now;
   } else {
     renderJoin();

@@ -32,6 +32,8 @@ io.on('connection', function(socket){
   });
 
   socket.on('move', function(data){
+    livingplayers[data.username].x = data.x;
+    livingplayers[data.username].y = data.y;
     socket.broadcast.emit('move', data);
   });
 
@@ -44,9 +46,6 @@ io.on('connection', function(socket){
       livingplayers[data.lasthitter].kills += 1;
     }
     livingplayers[data.username].deaths += 1;
-    for(var name in livingplayers){
-      console.log(name, livingplayers[name].kills, livingplayers[name].deaths);
-    }
     delete livingplayers[data.username];
     socket.broadcast.emit('die', data);
   });
