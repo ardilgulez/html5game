@@ -43,6 +43,7 @@ var MovableGameAsset = function(src, speed, width, height){
   this.username = undefined;
   this.lasthitter = undefined;
   this.health = undefined;
+  this.room = undefined;
   this.kills = 0;
   this.deaths = 0;
   this.image.onload = function(){
@@ -58,6 +59,10 @@ enemyImage.src = "../assets/enemy.png";
 enemyImage.onload = function(){
   enemyImageReady = true;
 };
+
+var bullets = [];
+var enemies = {};
+var killList = [];
 //END OF GAME ASSETS DECLARATIONS
 
 var socket = io();
@@ -80,6 +85,7 @@ socket.on("joingame", function(data){
 
 socket.on("get list", function(data){
   if(needlist){
+    console.log("DATA:", data);
     enemies = data;
     needlist = false;
   }
@@ -98,6 +104,7 @@ socket.on("move", function(data){
 });
 
 socket.on("spawn", function(data){
+  console.log("ENEMIES: ", enemies, "\nDATA:", data);
   enemies[data.username] = data;
 });
 
@@ -126,9 +133,6 @@ var hero = new MovableGameAsset("../assets/hero.png", herospeed, herowidth, hero
 hero.health = 100;
 
 var keysDown = {};
-var bullets = [];
-var enemies = {};
-var killList = [];
 
 canvas.tabIndex = 1;
 canvas.addEventListener("keydown", function(e) {
@@ -154,7 +158,8 @@ canvas.addEventListener("click", function(e) {
       'dirX' : bulletXDirection,
       'dirY' : bulletYDirection,
       'time' : new Date().getTime(),
-      'username' : hero.username
+      'username' : hero.username,
+      'room' : hero.room
     };
     bullets.push(bullet);
     socket.emit("fire", bullet);
@@ -241,8 +246,9 @@ function checkBulletCollision(bulletData){
   return collisionHappened;
 }
 
-var handleDeath = function(){
+var handleLeaveOrDeath = function(){
   joined = false;
+  needlist = true;
   document.getElementById("joinbutton").style.display = "inline";
   document.getElementById("leavebutton").style.display = "none";
   hero.deaths += 1;
@@ -261,18 +267,15 @@ function checkCollisionCondition(enemyOR, bulletData){
 }
 
 var joinAction = function(){
+  if(!document.getElementById("usernamebox").value || document.getElementById("usernamebox").value.trim().length <= 0 ||
+     !document.getElementById("roomnamebox").value || document.getElementById("roomnamebox").value.trim().length <= 0){
+    alert("Username or Roomname can not be left empty");
+    return;
+  }
   hero.username = document.getElementById("usernamebox").value;
+  hero.room = document.getElementById("roomnamebox").value;
   hero.health = 100;
-  socket.emit("joingame", {"username" : hero.username});
-};
-
-var leaveAction = function() {
-  joined = false;
-  document.getElementById("joinbutton").style.display = "inline";
-  document.getElementById("leavebutton").style.display = "none";
-  hero.deaths += 1;
-  socket.emit("die", hero);
-  delete hero.lasthitter;
+  socket.emit("joingame", {"username" : hero.username, "room" : hero.room});
 };
 
 var gameInit = function() {
@@ -337,7 +340,7 @@ var gameLoop = function() {
     renderGame();
     renderKills();
     if(hero.health <= 0){
-      handleDeath();
+      handleLeaveOrDeath();
     }
     then = now;
   } else {

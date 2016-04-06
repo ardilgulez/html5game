@@ -9,7 +9,9 @@
     <br>
     <input id="usernamebox" type="text" name="username" placeholder="Enter Your Username">
     <input id="joinbutton" type="button" onclick="joinAction()" value="Join">
-    <input id="leavebutton" type="button" style="display:none;" onclick="leaveAction()" value="Leave">
+    <input id="leavebutton" type="button" style="display:none;" onclick="handleLeaveOrDeath()" value="Leave">
+    <br>
+    <input id="roomnamebox" type="text" name="roomname" placeholder="Join a Room">
     <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
     <script type="text/javascript" src="./index.js"></script>
   </body>
