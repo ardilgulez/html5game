@@ -44,6 +44,7 @@ var MovableGameAsset = function(src, speed, width, height){
   this.lasthitter = undefined;
   this.health = undefined;
   this.room = undefined;
+  this.id = undefined;
   this.kills = 0;
   this.deaths = 0;
   this.image.onload = function(){
@@ -89,7 +90,7 @@ socket.on("get list", function(data){
     enemies = data;
     needlist = false;
   }
-  enemies[hero.username] = hero;
+  enemies[hero.id] = hero;
 });
 
 socket.on("fire", function(data){
@@ -99,28 +100,29 @@ socket.on("fire", function(data){
 });
 
 socket.on("move", function(data){
-  enemies[data.username].x = data.x;
-  enemies[data.username].y = data.y;
+  enemies[data.id].x = data.x;
+  enemies[data.id].y = data.y;
 });
 
 socket.on("spawn", function(data){
-  console.log("ENEMIES: ", enemies, "\nDATA:", data);
-  enemies[data.username] = data;
+  //data.x = (canvas.width * Math.random()) - this.width/2;
+  //data.y = (canvas.height * Math.random()) - this.height/2;
+  enemies[data.id] = data;
 });
 
 socket.on("die", function(data){
   console.log("SOMEONE DIED:", JSON.stringify(data, null, 2));
   if(data.lasthitter){
     console.log(data.lasthitter);
-    if(data.lasthitter === hero.username){
+    if(data.lasthitter === hero.id){
       hero.kills += 1;
     }
     killList.reverse();
-    killList.push({"kill" : data.lasthitter, "die" : data.username, "time" : new Date().getTime()});
+    killList.push({"kill" : data.killer, "die" : data.username, "time" : new Date().getTime()});
     killList.reverse();
   }
   setTimeout(function(){
-    delete enemies[data.username];
+    delete enemies[data.id];
   }, 50);
 });
 
@@ -158,7 +160,7 @@ canvas.addEventListener("click", function(e) {
       'dirX' : bulletXDirection,
       'dirY' : bulletYDirection,
       'time' : new Date().getTime(),
-      'username' : hero.username,
+      'userid' : hero.id,
       'room' : hero.room
     };
     bullets.push(bullet);
@@ -226,7 +228,7 @@ function checkBulletOutOfBounds(bulletData){
 function checkBulletCollision(bulletData){
   var collisionHappened = false;
   for(var name in enemies){
-    if(bulletData.username !== name){
+    if(bulletData.userid !== name){
       var enemyOR = {
         "x1" : enemies[name].x - bulletwidth,
         "y1" : enemies[name].y - bulletheight,
@@ -235,8 +237,8 @@ function checkBulletCollision(bulletData){
       };
       if(checkCollisionCondition(enemyOR, bulletData)) {
         console.log(hero.username, name);
-        if(hero.username === name){
-          hero.lasthitter = bulletData.username;
+        if(hero.id === name){
+          hero.lasthitter = bulletData.userid;
           hero.health -= 10;
         }
         collisionHappened = true;
@@ -275,7 +277,10 @@ var joinAction = function(){
   hero.username = document.getElementById("usernamebox").value;
   hero.room = document.getElementById("roomnamebox").value;
   hero.health = 100;
-  socket.emit("joingame", {"username" : hero.username, "room" : hero.room});
+  hero.id = '/#' + socket.id.toString();
+  console.log(socket.id);
+  console.log(hero.id);
+  socket.emit("joingame", {"id" : hero.id, "username" : hero.username, "room" : hero.room});
 };
 
 var gameInit = function() {
@@ -312,8 +317,9 @@ var renderGame = function() {
   }
   context.drawImage(hero.image, hero.x, hero.y);
   context.textAlign = "right";
-  context.fillText("Kills: " + hero.kills, canvas.width, 15);
-  context.fillText("Deaths: " + hero.deaths, canvas.width, 30);
+  context.font = "12px Times New Roman";
+  context.fillText("Kills: " + hero.kills, canvas.width - 5, 15);
+  context.fillText("Deaths: " + hero.deaths, canvas.width - 5, 30);
 };
 
 var renderJoin = function() {
@@ -322,6 +328,7 @@ var renderJoin = function() {
 };
 
 var renderKills = function() {
+  context.font = "12px Times New Roman";
   context.textAlign = "left";
   killList.forEach(function(kill, killIndex, killArray){
     if(new Date().getTime() - kill.time >= 3000){
@@ -332,6 +339,12 @@ var renderKills = function() {
   });
 };
 
+var renderHealth = function(){
+  context.font = "24px Times New Roman";
+  context.textAlign = "right";
+  context.fillText(hero.health, 40, canvas.height-40);
+};
+
 var gameLoop = function() {
   if(joined){
     var now = new Date().getTime();
@@ -339,6 +352,7 @@ var gameLoop = function() {
     update(delta/1000);
     renderGame();
     renderKills();
+    renderHealth();
     if(hero.health <= 0){
       handleLeaveOrDeath();
     }

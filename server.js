@@ -2,7 +2,9 @@ var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
+var fs = require('fs');
 var livingplayers = {};
+var players = {};
 
 server.listen(3000);
 
@@ -14,14 +16,17 @@ app.get('/', function(req, res, next){
 });
 
 io.on('connection', function(socket){
-  console.log('SOMEONE CONNECTED');
+  console.log('SOMEONE CONNECTED:', socket.id);
   socket.emit('welcome', 'HEY DUDE YOU SHOULD TOTALLY JOIN');
 
+  socket.on('joinlobby', function(data){
+
+  });
+
   socket.on('joingame', function(data){
-    if(livingplayers[data.room] && livingplayers[data.room][data.username]){
+    if(livingplayers[data.room] && livingplayers[data.room][data.id]){
       socket.emit('joinfail', 'That name is taken');
     } else {
-      console.log('ROOM:', data.room, '\nLIST:', livingplayers[data.room]);
       socket.join(data.room);
       socket.emit('joingame', data);
     }
@@ -33,15 +38,13 @@ io.on('connection', function(socket){
       livingplayers[data.room] = {};
     }
     socket.emit('get list', livingplayers[data.room]);
-    console.log('ROOM:', data.room, '\nLIST:', livingplayers[data.room]);
-    livingplayers[data.room][data.username] = data;
+    livingplayers[data.room][data.id] = data;
     socket.broadcast.to(data.room).emit('spawn', data);
   });
 
   socket.on('move', function(data){
-    console.log('ROOM:', data.room, '\nLIST:', livingplayers[data.room]);
-    livingplayers[data.room][data.username].x = data.x;
-    livingplayers[data.room][data.username].y = data.y;
+    livingplayers[data.room][data.id].x = data.x;
+    livingplayers[data.room][data.id].y = data.y;
     socket.broadcast.to(data.room).emit('move', data);
   });
 
@@ -54,13 +57,13 @@ io.on('connection', function(socket){
       livingplayers[data.room][data.lasthitter].kills += 1;
     }
     socket.leave(data.room);
-    livingplayers[data.room][data.username].deaths += 1;
-    delete livingplayers[data.room][data.username];
-    console.log('ROOM:', data.room, '\nLIST:', livingplayers[data.room]);
+    livingplayers[data.room][data.id].deaths += 1;
+    data.killer = livingplayers[data.room][data.id].username;
+    delete livingplayers[data.room][data.id];
     socket.broadcast.to(data.room).emit('die', data);
   });
 
   socket.on('disconnect', function(data){
-    console.log('SOMEONE DISCONNECTED');
+    console.log('SOMEONE DISCONNECTED:', socket.id);
   });
 });
