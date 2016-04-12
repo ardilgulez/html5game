@@ -34,7 +34,6 @@ io.on('connection', function(socket){
 
   socket.on('spawn', function(data){
     if(!livingplayers[data.room]){
-      console.log('NOBODY IN THE ROOM BEFORE');
       livingplayers[data.room] = {};
     }
     socket.emit('get list', livingplayers[data.room]);
@@ -58,7 +57,7 @@ io.on('connection', function(socket){
     }
     socket.leave(data.room);
     livingplayers[data.room][data.id].deaths += 1;
-    data.killer = livingplayers[data.room][data.id].username;
+    data.killer = livingplayers[data.room][data.lasthitter].username;
     delete livingplayers[data.room][data.id];
     socket.broadcast.to(data.room).emit('die', data);
   });

@@ -50,8 +50,8 @@ var MovableGameAsset = function(src, speed, width, height){
   this.image.onload = function(){
     this.ready = true;
   };
-  this.x = (canvas.width * Math.random()) - this.width/2;
-  this.y = (canvas.height * Math.random()) - this.height/2;
+  this.x = (canvas.width * Math.random()) - this.width;
+  this.y = (canvas.height * Math.random()) - this.height;
 };
 
 var enemyImageReady = false;
@@ -80,6 +80,8 @@ socket.on("joinfail", function(data){
 socket.on("joingame", function(data){
   document.getElementById("joinbutton").style.display = "none";
   document.getElementById("leavebutton").style.display = "inline";
+  hero.x = Math.max(0, (canvas.width * Math.random()) - hero.width);
+  hero.y = Math.max(0, (canvas.height * Math.random()) - hero.height);
   socket.emit("spawn", hero);
   joined = true;
 });
@@ -105,8 +107,6 @@ socket.on("move", function(data){
 });
 
 socket.on("spawn", function(data){
-  //data.x = (canvas.width * Math.random()) - this.width/2;
-  //data.y = (canvas.height * Math.random()) - this.height/2;
   enemies[data.id] = data;
 });
 
@@ -236,9 +236,11 @@ function checkBulletCollision(bulletData){
         "y2" : enemies[name].y + enemies[name].height + 2*bulletheight -2
       };
       if(checkCollisionCondition(enemyOR, bulletData)) {
-        console.log(hero.username, name);
+        console.log(hero.id, name);
         if(hero.id === name){
+          console.log(bulletData.userid);
           hero.lasthitter = bulletData.userid;
+          console.log(hero.lasthitter);
           hero.health -= 10;
         }
         collisionHappened = true;
@@ -254,6 +256,7 @@ var handleLeaveOrDeath = function(){
   document.getElementById("joinbutton").style.display = "inline";
   document.getElementById("leavebutton").style.display = "none";
   hero.deaths += 1;
+  console.log(hero.lasthitter);
   socket.emit("die", hero);
   delete hero.lasthitter;
 };
